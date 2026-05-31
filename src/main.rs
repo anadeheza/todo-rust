@@ -1,99 +1,123 @@
-use clap::{Parser, Subcommand};
+use axum:: {
+    extract::{Path, State},
+    http::StatusCode,
+    routing::{delete, get, post, put},
+    Json, Router,
+};
+//use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
-use std::fs;
+use std::{
+    fs,
+    sync::{Arc, Mutex},
+};
+use tower_http::cors::CorsLayer;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 struct Todo {
-    id: usize, 
+    id: u32, 
     title: String, 
     done: bool,
 }
 
-#[derive(Parser)]
-#[command(name = "todo", about = "A simple todo list")]
-struct Cli {
-    #[command(subcommand)]
-    command: Commands,
+#[derive(Deserialize)]
+struct CreateTodo {
+    title: String,
 }
 
-#[derive(Subcommand)]
-enum Commands {
-    Add { title: String },
-    List, 
-    Done { id: usize },
-    Remove { id: usize }
+#[derive(Deserialize)]
+struct UpdateTodo {
+    title: Option<String>,
+    done: Option<bool>,
 }
+
+type Db = Arc<Mutex<Vec<Todo>>>;
 
 const FILE: &str = "todos.json";
- 
+
 fn load() -> Vec<Todo> {
     match fs::read_to_string(FILE) {
         Ok(contents) => serde_json::from_str(&contents).unwrap_or_default(),
-        Err(_) => vec![],   
+        Err(_) => vec![],
     }
 }
 
 fn save(todos: &Vec<Todo>) {
-    let json = serde_json::to_string_pretty(todos).expect("Failed to serielize");
-    fs::write(FILE, json).expect("Failed to write")
+    let json = serde_json::to_string_pretty(todos).expect("serialize failed");
+    fs::write(FILE, json).expect("write failed");
 }
 
-fn add(title: String) { 
-    let mut todos = load();
+async fn list(State(db): State<Db>) -> Json<Vec<Todo>> {
+    let todos = db.lock().unwrap();
+    Json(todos.clone())
+}
+
+async fn create(
+    State(db): State<Db>, 
+    Json(payload): Json<CreateTodo>,
+) -> (StatusCode, Json<Todo>) { 
+    let mut todos = db.lock().unwrap();
     let id = todos.last().map(|t| t.id + 1).unwrap_or(1);
-    todos.push(Todo { id, title: title.clone(), done: false });
+    let todo =  Todo {
+        id,
+        title: payload.title,
+        done: false,
+    };
+
+    todos.push(todo.clone());
     save(&todos);
-    println!("Added task #{id}: \"{title}\"")
+    (StatusCode::CREATED, Json(todo))
 }
 
-fn list() {
-    let todos = load();
-    if todos.is_empty() {
-        println!("No tasks yet! Add one with: todo add \"your task\"");
-        return;
-    }
-
-    println!("{:<5} {:<8} {}", "ID", "STATUS", "TITLE");
-    println!("{}", "-".repeat(40));
-
-
-    for t in &todos {
-        let status = if t.done { "done" } else { " o todo" };
-        println!("{:<5} {:<8} {}", t.id, status, t.title)
-    }
-}
-
-fn done(id: usize) {
-    let mut todos = load();
+async fn update(
+    State(db): State<Db>,
+    Path(id): Path<u32>,
+    Json(payload): Json<UpdateTodo>,
+) -> Result<Json<Todo>, StatusCode> {
+    let mut todos = db.lock().unwrap();
     match todos.iter_mut().find(|t| t.id == id) {
-        Some(t) => {
-            t.done = true;
+        Some(todo) => {
+            if let Some(title) = payload.title {
+                todo.title = title;
+            }
+            if let Some(done) = payload.done {
+                todo.done = done;
+            }
+            let updated = todo.clone();
             save(&todos);
-            println!("🎉 Task #{id} marked as done!");
+            Ok(Json(updated))
         }
-        None => println!("❌ No task with id {id}"),
+        None => Err(StatusCode::NOT_FOUND),
     }
 }
 
-fn remove(id: usize) {
-    let mut todos = load();
+async fn delete_todo(
+    State(db): State<Db>,
+    Path(id): Path<u32>,
+) -> StatusCode {
+    let mut todos = db.lock().unwrap();
     let before = todos.len();
     todos.retain(|t| t.id != id);
     if todos.len() < before {
         save(&todos);
-        println!("Task #{id} removed.")
+        StatusCode::NO_CONTENT
     } else {
-        println!("❌ No task with id {id}");
+        StatusCode::NOT_FOUND
     }
 
 }
 
-fn main() {
-    let cli = Cli::parse();
-    match cli.command {
-        Commands::Add { title } => add(title),
-        Commands::List => list(),
-        Commands::Done { id } => done(id),
-        Commands::Remove { id } => remove(id),
-    }
+#[tokio::main]
+async fn main() {
+    let todos = load();
+    let db: Db = Arc::new(Mutex::new(todos));
+
+    let app = Router::new()
+        .route("/todos", get(list).post(create))
+        .route("/todos/:id", put(update).delete(delete_todo))
+        .with_state(db)
+        .layer(CorsLayer::permissive());
+
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3001").await.unwrap();
+    println!("Server running on http://localhost:3001");
+    axum::serve(listener, app).await.unwrap();
 }
