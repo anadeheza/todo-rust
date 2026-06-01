@@ -88,7 +88,7 @@ export default function App() {
 
   async function deleteTask(id) {
     await apiFetch(`${API}/${id}`, { method: 'DELETE' })
-    setTasks(prev => prev.filter(t => t.id !== id))
+    await loadTasks() 
   }
 
   const filtered = todos.filter(t => {
@@ -105,52 +105,56 @@ export default function App() {
         <source src={bg} type="video/mp4"/>
       </video>
 
-      <div className="header">
-        <div className="heading">GET YOUR TASKS DONE!</div>
-        <h1 className="title">Add here ⤵︎</h1>
-      </div>
- 
-      <form className="form" onSubmit={addTask}>
-        <input
-          ref={inputRef}
-          className="input"
-          placeholder="⊹ ﹏𓊝﹏𓂁﹏⊹ ˖"
-          value={input}
-          onChange={e => setInput(e.target.value)}
-        />
-        <button className="addBtn" type="submit">⌯⌲</button>
-      </form>
- 
-      <div className="filters">
-        {['all', 'active', 'done'].map(f => (
-          <button
-            key={f}
-            className={`filterBtn ${filter === f ? 'active' : ''}`}
-            onClick={() => setFilter(f)}
-          >
-            {f}
-          </button>
-        ))}
-      </div>
- 
-      <div className="list">
-        {filtered.length === 0 ? (
-          <div className="empty">
-            {filter === 'done' ? 'No completed tasks' :
-             filter === 'active' ? 'Nothing left to do, great job!' :
-             'No tasks yet, add one above ;)'}
-          </div>
-        ) : (
-          filtered.map(todo => (
-            <TodoItem
-              key={todo.id}
-              todo={todo}
-              onToggle={toggleTask}
-              onDelete={deleteTask}
-              onUpdate={updateTask}
+      <div className="container">
+        <div className="header">
+          <div className="heading">GET YOUR TASKS DONE!</div>
+          <h1 className="title">Add here ⤵︎</h1>
+        </div>
+
+      <div className="tasks-container">
+          <form className="form" onSubmit={addTask}>
+            <input
+              ref={inputRef}
+              className="input"
+              placeholder="⊹ ﹏𓊝﹏𓂁﹏⊹ ˖"
+              value={input}
+              onChange={e => setInput(e.target.value)}
             />
-          ))
-        )}
+            <button className="addBtn" type="submit">⌯⌲</button>
+          </form>
+    
+          <div className="filters">
+            {['all', 'active', 'done'].map(f => (
+              <button
+                key={f}
+                className={`filterBtn ${filter === f ? 'active' : ''}`}
+                onClick={() => setFilter(f)}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+    
+          <div className="list">
+            {filtered.length === 0 ? (
+              <div className="empty">
+                {filter === 'done' ? 'No completed tasks' :
+                filter === 'active' ? 'Nothing left to do, great job!' :
+                'No tasks yet, add one above ;)'}
+              </div>
+            ) : (
+              filtered.map(todo => (
+                <TodoItem
+                  key={todo.id}
+                  todo={todo}
+                  onToggle={toggleTask}
+                  onDelete={deleteTask}
+                  onUpdate={updateTask}
+                />
+              ))
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )
