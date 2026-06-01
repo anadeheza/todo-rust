@@ -55,8 +55,7 @@ async fn create(
     Json(payload): Json<CreateTodo>,
 ) -> (StatusCode, Json<Todo>) { 
     let mut todos = db.lock().unwrap();
-    let id = todos.last().map(|t| t.id + 1).unwrap_or(1);
-    let todo =  Todo {
+    let id = todos.iter().map(|t| t.id).max().unwrap_or(0) + 1;    let todo =  Todo {
         id,
         title: payload.title,
         done: false,
