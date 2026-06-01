@@ -38,16 +38,16 @@
 
 .input {
   flex: 1 1 0;
-  background: #18181b;
-  border: 1px solid #2a2a2f;
+  background: #0e101df7;
+  border: 1px solid black;
   border-radius: 10px;
   padding: 10px 20px;
-  color: #f4f4f5;
-  font-size: 20px;
+  color: wheat;
+  font-size: 15px;
 }
 
 .addBtn {
-  background: #C4A482;
+  background: #c4a4829e;
   color: black;
   border: none;
   border-radius: 10px;
@@ -61,7 +61,7 @@
 }
 
 .addBtn:hover {
-  background: wheat;
+  background: #C4A482;
 }
 
 .filters {
@@ -73,10 +73,11 @@
 }
 
 .filterBtn {
-  background: #C4A482;
-  border: 1px dashed #343434;
+  background: #c4a48237;
+  border: 1px dashed #C4A482;
+  margin-top: 2%;
   margin-right: 2%;
-  color: black;
+  color: wheat;
   border-radius: 5px;
   padding: 5px 12px;
   font-size: 13px;
@@ -86,7 +87,9 @@
 }
 
 .filterBtn:hover {
-  background-color: wheat;
+  background-color: #C4A482;
+  color: black;
+  border: 1px solid wheat;
 }
 
 .list {
@@ -104,8 +107,9 @@
   background: #000317e0;
   border: 1px solid black;
   border-radius: 20px;
-  padding: 14px 16px;
+  padding: 10px 15px;
   transition: all 0.2s;
+  word-break: break-all;
 }
 
 .todoItem.done {
@@ -134,18 +138,19 @@
 .todoText {
   flex: 1;
   font-size: 15px;
-  color: #f4f4f5;
+  color: wheat;
+  margin: 5px;
 }
 
 .todoText.done {
-  color: #52525b;
+  color: #c4a482a9;
   text-decoration: line-through;
 }
 
 .deleteBtn {
   background: transparent;
   border: none;
-  color: #71717a;
+  color: #c4a482a9;
   cursor: pointer;
   font-size: 15px;
   line-height: 1;
@@ -159,9 +164,11 @@
 
 .empty {
   text-align: center;
-  color: #777777;
+  color: #c4a482a9;
   font-family: 'Geist Mono', monospace;
   font-size: 13px;
   padding: 50px 0;
   border-radius: 10px;
 }
+
+/*TODO: Add block to header and input, overflow to tasks section, overflow hidden for tha rest*/

@@ -26,7 +26,6 @@ struct CreateTodo {
 
 #[derive(Deserialize)]
 struct UpdateTodo {
-    title: Option<String>,
     done: Option<bool>,
 }
 
@@ -76,9 +75,6 @@ async fn update(
     let mut todos = db.lock().unwrap();
     match todos.iter_mut().find(|t| t.id == id) {
         Some(todo) => {
-            if let Some(title) = payload.title {
-                todo.title = title;
-            }
             if let Some(done) = payload.done {
                 todo.done = done;
             }
