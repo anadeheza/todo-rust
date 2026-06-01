@@ -51,7 +51,7 @@ function TodoItem({ todo, onToggle, onDelete, onUpdate, isDragging, dragHandlePr
     
     <div className={`todoItem ${todo.done ? 'done' : ''} ${isDragging ? 'dragging' : ''} `}>
       <span className="dragHandle" {...dragHandleProps}>
-        .
+        ༄
       </span>
 
       <div className={`checkbox ${todo.done ? 'checked' : ''}`} onClick={() => onToggle(todo.id, todo.done)}>
@@ -149,8 +149,6 @@ export default function App() {
   async function deleteTask(id) {
     await apiFetch(`${API}/${id}`, { method: 'DELETE' })
     await loadTasks() 
-    //    setTasks(prev => prev.filter(t => t.id !== id))
-
   }
 
   async function deleteAll() {
@@ -209,8 +207,7 @@ export default function App() {
 
       <div className="container">
         <div className="header">
-          <div className="heading">GET YOUR TASKS DONE!</div>
-          <h1 className="title">Add here ⤵︎</h1>
+          <h1 className="title">GET YOUR TASKS DONE! ⤵︎</h1>
         </div>
 
       <div className="tasks-container">

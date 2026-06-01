@@ -25,16 +25,9 @@
   margin-bottom: 35px;
 }
 
-.heading {
-  font-size: 15px;
-  font-weight: 500;
-  color: #C4A482;
-  letter-spacing: 0.15em;
-}
-
 .title {
   font-size: 30px;
-  color: #000000dc;
+  color: #C4A482;
 }
 
 .tasks-container {
@@ -125,7 +118,7 @@
   background: #000317e0;
   border: 1px solid black;
   border-radius: 20px;
-  padding: 10px 15px;
+  padding: 5px 15px;
   transition: all 0.2s;
   word-break: break-all;
 }
@@ -156,7 +149,7 @@
 .todoText {
   flex: 1;
   font-size: 15px;
-  color: wheat;
+  color: #C4A482;
   margin: 5px;
 }
 
@@ -251,3 +244,10 @@
   border-radius: 10px;
   font-size: 15px;
 }
+
+.dragHandle {
+  color: #ffe0be;
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
