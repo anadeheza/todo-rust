@@ -20,24 +20,80 @@ function Checkmark() {
   )
 }
 
-function TodoItem({ todo, onToggle, onDelete, onUpdate}) {
+function TodoItem({ todo, onToggle, onDelete, onUpdate, isDragging, dragHandleProps }) {
+  const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(todo.title)
   const inputRef = useRef()
 
+  useEffect(() => {
+    if (editing) inputRef.current?.focus()
+  }, [editing])
+
+  function handleKeyDown(e) {
+    if(e.key === 'Enter') commitEdit()
+      if(e.key === 'Escape') {
+        setDraft(todo.title)
+        setEditing(false)
+      }
+  }
+
+  function commitEdit() {
+    const trimmed = draft.trim()
+    if(trimmed && trimmed !== todo.title) {
+      onUpdate(todo.id, { title: trimmed })
+    } else {
+      setDraft(todo.title)
+    }
+    setEditing(false)
+  }
+
   return (
     
-    <div className={`todoItem ${todo.done ? 'done' : ''}`}>
+    <div className={`todoItem ${todo.done ? 'done' : ''} ${isDragging ? 'dragging' : ''} `}>
+      <span className="dragHandle" {...dragHandleProps}>
+        .
+      </span>
+
       <div className={`checkbox ${todo.done ? 'checked' : ''}`} onClick={() => onToggle(todo.id, todo.done)}>
         {todo.done && <Checkmark />}
-      </div>      
-      <span
-        className={`todoText ${todo.done ? 'done' : ''}`}
-      >
-        {todo.title}
-      </span>
+      </div> 
+
+      {editing ? (
+        <input 
+          ref={inputRef}
+          className="editInput"
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onBlur={commitEdit}
+          onKeyDown={handleKeyDown}
+        />
+      ) : (
+        <span
+          className={`todoText ${todo.done ? 'done' : ''}`}
+          onDoubleClick={() => !todo.done && setEditing(true)}
+        >
+          {todo.title}
+        </span>
+      )}
+
       <button className="deleteBtn" onClick={() => onDelete(todo.id)} title="Delete">
         ×
       </button>
+    </div>
+  )
+}
+
+function ConfirmDeleteAll({ onConfirm, onCancel }) {
+  return (
+    <div className="confirmOverlay">
+      <div className="confirmBox">
+        <p className="confirmText">Sure you wanna delete all?</p>
+        <p className="waningText">This cannot be undone</p>
+        <div className="confirmButtons">
+          <button className="confirmOk" onClick={onConfirm}>delete</button>
+          <button className="confirmCancel" onClick={onCancel}>cancel</button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -46,7 +102,11 @@ export default function App() {
   const [todos, setTasks] = useState([])
   const [input, setInput] = useState('')
   const [filter, setFilter] = useState('all')
+  const [showConfirm, setShowConfirm] = useState(false)
   const inputRef = useRef()
+
+  const dragId = useRef(null)
+  const dragOverId = useRef(null)
 
   async function loadTasks() {
     const data = await apiFetch(API)
@@ -89,6 +149,41 @@ export default function App() {
   async function deleteTask(id) {
     await apiFetch(`${API}/${id}`, { method: 'DELETE' })
     await loadTasks() 
+    //    setTasks(prev => prev.filter(t => t.id !== id))
+
+  }
+
+  async function deleteAll() {
+    await apiFetch(API, { method: 'DELETE' })
+    setTasks([])
+    setShowConfirm(false)  
+  }
+
+  function onDragStart(id) {
+    dragId.current = id 
+  }
+
+  function onDragEnter(id) {
+    dragOverId.current = id
+    if (id === dragId.current) return
+    setTasks(prev => {
+      const next = [...prev]
+      const fromIdx = next.findIndex(t => t.id === dragId.current)
+      const toIdx = next.findIndex(t => t.id === id)
+      if (fromIdx === -1 || toIdx === -1) return prev
+      const [item] = next.splice(fromIdx, 1)
+      next.splice(toIdx, 0, item)
+      return next
+    })
+  }
+
+  async function onDragEnd() {
+    dragId.current = null
+    dragOverId.current = null
+    await apiFetch(`${API}/reorder`, {
+      method: 'POST',
+      body: JSON.stringify({ ids: todos.map(t => t.id) })
+    })
   }
 
   const filtered = todos.filter(t => {
@@ -104,6 +199,13 @@ export default function App() {
       <video autoPlay muted loop id="myVideo">
         <source src={bg} type="video/mp4"/>
       </video>
+
+      {showConfirm && (
+        <ConfirmDeleteAll
+          onConfirm={deleteAll}
+          onCancel={() => setShowConfirm(false)}
+        />
+      )}
 
       <div className="container">
         <div className="header">
@@ -139,21 +241,44 @@ export default function App() {
             {filtered.length === 0 ? (
               <div className="empty">
                 {filter === 'done' ? 'No completed tasks' :
-                filter === 'active' ? 'Nothing left to do, great job!' :
-                'No tasks yet, add one above ;)'}
+                  filter === 'active' ? 'Nothing left to do, great job!' :
+                    'No tasks yet, add one above ;)'}
               </div>
             ) : (
               filtered.map(todo => (
-                <TodoItem
+                <div
                   key={todo.id}
-                  todo={todo}
-                  onToggle={toggleTask}
-                  onDelete={deleteTask}
-                  onUpdate={updateTask}
-                />
+                  draggable
+                  onDragStart={() => onDragStart(todo.id)}
+                  onDragEnter={() => onDragEnter(todo.id)}
+                  onDragEnd={onDragEnd}
+                  onDragOver={e => e.preventDefault()}
+                >
+                  <TodoItem
+                    key={todo.id}
+                    todo={todo}
+                    onToggle={toggleTask}
+                    onDelete={deleteTask}
+                    onUpdate={updateTask}
+                    isDragging={false}
+                    dragHandleProps={{}}
+                  />
+                </div>
               ))
             )}
           </div>
+
+          {todos.length > 0 && (
+            <div className="footer">
+              <span className="countText">{doneCount}/{todos.length} done</span>
+              <button
+                className="deleteAllBtn"
+                onClick={() => setShowConfirm(true)}
+              >
+                delete all
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

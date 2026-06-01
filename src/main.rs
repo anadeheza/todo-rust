@@ -1,22 +1,20 @@
-use axum:: {
+use axum::{
     extract::{Path, State},
     http::StatusCode,
     routing::{delete, get, post, put},
     Json, Router,
 };
-//use clap::{Parser, Subcommand};
+use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
-use std::{
-    fs,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 use tower_http::cors::CorsLayer;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct Todo {
-    id: u32, 
-    title: String, 
+    id: u32,
+    title: String,
     done: bool,
+    position: u32,
 }
 
 #[derive(Deserialize)]
@@ -27,42 +25,74 @@ struct CreateTodo {
 #[derive(Deserialize)]
 struct UpdateTodo {
     done: Option<bool>,
+    title: Option<String>,
 }
 
-type Db = Arc<Mutex<Vec<Todo>>>;
-
-const FILE: &str = "todos.json";
-
-fn load() -> Vec<Todo> {
-    match fs::read_to_string(FILE) {
-        Ok(contents) => serde_json::from_str(&contents).unwrap_or_default(),
-        Err(_) => vec![],
-    }
+#[derive(Deserialize)]
+struct ReorderPayload {
+    ids: Vec<u32>,
 }
 
-fn save(todos: &Vec<Todo>) {
-    let json = serde_json::to_string_pretty(todos).expect("serialize failed");
-    fs::write(FILE, json).expect("write failed");
+type Db = Arc<Mutex<Connection>>;
+
+fn init_db(conn: &Connection) {
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS todos (
+            id       INTEGER PRIMARY KEY AUTOINCREMENT,
+            title    TEXT NOT NULL,
+            done     BOOLEAN NOT NULL DEFAULT 0,
+            position INTEGER NOT NULL DEFAULT 0
+        );",
+    )
+    .expect("Failed to init DB");
+}
+
+fn get_todos(conn: &Connection) -> Vec<Todo> {
+    let mut stmt = conn
+        .prepare("SELECT id, title, done, position FROM todos ORDER BY position ASC, id ASC")
+        .unwrap();
+    stmt.query_map([], |row| {
+        Ok(Todo {
+            id: row.get(0)?,
+            title: row.get(1)?,
+            done: row.get(2)?,
+            position: row.get(3)?,
+        })
+    })
+    .unwrap()
+    .filter_map(|r| r.ok())
+    .collect()
 }
 
 async fn list(State(db): State<Db>) -> Json<Vec<Todo>> {
-    let todos = db.lock().unwrap();
-    Json(todos.clone())
+    let conn = db.lock().unwrap();
+    Json(get_todos(&conn))
 }
 
 async fn create(
-    State(db): State<Db>, 
+    State(db): State<Db>,
     Json(payload): Json<CreateTodo>,
-) -> (StatusCode, Json<Todo>) { 
-    let mut todos = db.lock().unwrap();
-    let id = todos.iter().map(|t| t.id).max().unwrap_or(0) + 1;    let todo =  Todo {
+) -> (StatusCode, Json<Todo>) {
+    let conn = db.lock().unwrap();
+    let max_pos: u32 = conn
+        .query_row("SELECT COALESCE(MAX(position), 0) FROM todos", [], |r| {
+            r.get(0)
+        })
+        .unwrap_or(0);
+
+    conn.execute(
+        "INSERT INTO todos (title, done, position) VALUES (?1, 0, ?2)",
+        params![payload.title, max_pos + 1],
+    )
+    .unwrap();
+
+    let id = conn.last_insert_rowid() as u32;
+    let todo = Todo {
         id,
         title: payload.title,
         done: false,
+        position: max_pos + 1,
     };
-
-    todos.push(todo.clone());
-    save(&todos);
     (StatusCode::CREATED, Json(todo))
 }
 
@@ -71,43 +101,85 @@ async fn update(
     Path(id): Path<u32>,
     Json(payload): Json<UpdateTodo>,
 ) -> Result<Json<Todo>, StatusCode> {
-    let mut todos = db.lock().unwrap();
-    match todos.iter_mut().find(|t| t.id == id) {
-        Some(todo) => {
-            if let Some(done) = payload.done {
-                todo.done = done;
-            }
-            let updated = todo.clone();
-            save(&todos);
-            Ok(Json(updated))
-        }
-        None => Err(StatusCode::NOT_FOUND),
+    let conn = db.lock().unwrap();
+
+    if let Some(done) = payload.done {
+        conn.execute(
+            "UPDATE todos SET done = ?1 WHERE id = ?2",
+            params![done, id],
+        )
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     }
+
+    if let Some(title) = payload.title {
+        conn.execute(
+            "UPDATE todos SET title = ?1 WHERE id = ?2",
+            params![title, id],
+        )
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    }
+
+    let todo = conn
+        .query_row(
+            "SELECT id, title, done, position FROM todos WHERE id = ?1",
+            params![id],
+            |row| {
+                Ok(Todo {
+                    id: row.get(0)?,
+                    title: row.get(1)?,
+                    done: row.get(2)?,
+                    position: row.get(3)?,
+                })
+            },
+        )
+        .map_err(|_| StatusCode::NOT_FOUND)?;
+
+    Ok(Json(todo))
 }
 
-async fn delete_todo(
-    State(db): State<Db>,
-    Path(id): Path<u32>,
-) -> StatusCode {
-    let mut todos = db.lock().unwrap();
-    let before = todos.len();
-    todos.retain(|t| t.id != id);
-    if todos.len() < before {
-        save(&todos);
+async fn delete_todo(State(db): State<Db>, Path(id): Path<u32>) -> StatusCode {
+    let conn = db.lock().unwrap();
+    let rows = conn
+        .execute("DELETE FROM todos WHERE id = ?1", params![id])
+        .unwrap_or(0);
+    if rows > 0 {
         StatusCode::NO_CONTENT
     } else {
         StatusCode::NOT_FOUND
     }
+}
 
+async fn delete_all(State(db): State<Db>) -> StatusCode {
+    let conn = db.lock().unwrap();
+    conn.execute("DELETE FROM todos", []).unwrap_or(0);
+    StatusCode::NO_CONTENT
+}
+
+async fn reorder(
+    State(db): State<Db>,
+    Json(payload): Json<ReorderPayload>,
+) -> StatusCode {
+    let conn = db.lock().unwrap();
+    for (pos, id) in payload.ids.iter().enumerate() {
+        conn.execute(
+            "UPDATE todos SET position = ?1 WHERE id = ?2",
+            params![pos as u32, id],
+        )
+        .unwrap_or(0);
+    }
+    StatusCode::NO_CONTENT
 }
 
 #[tokio::main]
 async fn main() {
-    let todos = load();
-    let db: Db = Arc::new(Mutex::new(todos));
+    let conn = Connection::open("todos.db").expect("Failed to open DB");
+    init_db(&conn);
+
+    let db: Db = Arc::new(Mutex::new(conn));
 
     let app = Router::new()
-        .route("/todos", get(list).post(create))
+        .route("/todos", get(list).post(create).delete(delete_all))
+        .route("/todos/reorder", post(reorder))
         .route("/todos/:id", put(update).delete(delete_todo))
         .with_state(db)
         .layer(CorsLayer::permissive());
