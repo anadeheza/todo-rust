@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react"
+import './App.css'
 
 const API = '/todos'
 
@@ -44,8 +45,33 @@ function TodoItem({ todo, onToggle, onDelete, onUpdate}) {
   }
 
   return (
-    <div style={}>
-
+    
+    <div className={`todoItem ${todo.done ? 'done' : ''}`}>
+      <span className="idBadge">#{todo.id}</span>
+      <div className={`checkbox ${todo.done ? 'checked' : ''}`} onClick={() => onToggle(todo.id, todo.done)}>
+        {todo.done && <Checkmark />}
+      </div>
+      {editing ? (
+        <input
+          ref={inputRef}
+          className="editInput"
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onBlur={commitEdit}
+          onKeyDown={onKeyDown}
+        />
+      ) : (
+        <span
+          className={`todoText ${todo.done ? 'done' : ''}`}
+          onDoubleClick={startEdit}
+          title="Double-click to edit"
+        >
+          {todo.title}
+        </span>
+      )}
+      <button className="deleteBtn" onClick={() => onDelete(todo.id)} title="Delete">
+        ×
+      </button>
     </div>
   )
 }
@@ -58,7 +84,7 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const inputRef = useRef()
 
-  async function loadTodos() {
+  async function loadTasks() {
     try {
       const data = await apiFetch(API)
       setTasks(data)
@@ -69,9 +95,9 @@ export default function App() {
     }
   }
 
-  useEffect(() => { loadTodos() }, [])
+  useEffect(() => { loadTasks() }, [])
 
-  async function addTodo(e) {
+  async function addTask(e) {
     e.preventDefault()
     const title = input.trim()
     if(!title) return
@@ -88,7 +114,7 @@ export default function App() {
     }
   }
 
-  async function toggleTodo(id, currentDone) {
+  async function toggleTask(id, currentDone) {
     try {
       const updated = await apiFetch(`${API}/${id}`, {
         method: 'PUT',
@@ -100,7 +126,7 @@ export default function App() {
     }
   }
 
-  async function updateTodo(id, changes) {
+  async function updateTask(id, changes) {
     try {
       const updated = await apiFetch(`${API}/${id}`, {
         method: 'PUT',
@@ -112,7 +138,86 @@ export default function App() {
     }
   }
 
-  async function deleteTodo(params) {
-    
+  async function deleteTask(params) {
+    try {
+      await apiFetch(`${API}/${id}`, { method: 'DELETE' })
+      setTasks(prev => prev.filter(t => t.id !== id))
+    } catch (e) {
+      setError('failed to delete task')
+    }
   }
+
+  const filtered = todos.filter(t => {
+    if(filter === 'active') return !t.done 
+    if(filter === 'done') return t.done
+    return true 
+  })
+
+  const doneCount = todos.filter(t => t.done).length
+
+  return (
+    <div className="page">
+      <div className="header">
+        <div className="title">todo app</div>
+        <h1 className="heading">What needs doing?</h1>
+        {!loading && (
+          <div className="stats">
+            {todos.length} tasks · {doneCount} completed · {todos.length - doneCount} remaining
+          </div>
+        )}
+      </div>
+ 
+      {error && (
+        <div className="error">
+          ⚠ {error}
+          <button className="errorClose" onClick={() => setError(null)}>×</button>
+        </div>
+      )}
+ 
+      <form className="form" onSubmit={addTodo}>
+        <input
+          ref={inputRef}
+          className="input"
+          placeholder="Add a new task..."
+          value={input}
+          onChange={e => setInput(e.target.value)}
+        />
+        <button className="addBtn" type="submit">Add task</button>
+      </form>
+ 
+      <div className="filters">
+        {['all', 'active', 'done'].map(f => (
+          <button
+            key={f}
+            className={`filterBtn ${filter === f ? 'active' : ''}`}
+            onClick={() => setFilter(f)}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
+ 
+      <div className="list">
+        {loading ? (
+          <div className="empty">loading...</div>
+        ) : filtered.length === 0 ? (
+          <div className="empty">
+            {filter === 'done' ? 'No completed tasks yet.' :
+             filter === 'active' ? 'Nothing left to do!' :
+             'No tasks yet. Add one above.'}
+          </div>
+        ) : (
+          filtered.map(todo => (
+            <TodoItem
+              key={todo.id}
+              todo={todo}
+              onToggle={toggleTodo}
+              onDelete={deleteTodo}
+              onUpdate={updateTodo}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  )
 }
