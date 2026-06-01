@@ -4,26 +4,17 @@
   padding: 0;
 }
 
+#myVideo {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  min-width: 100%;
+  min-height: 100%;
+  z-index: -1;
+}
+
 body {
   font-family: 'Geist', sans-serif;
-  background: #0e0e0f;
-  color: #f4f4f5;
-  min-height: 100vh;
+  background-color: #0b0bb9;
 }
 
-input, button, textarea {
-  font-family: inherit;
-}
- 
-::-webkit-scrollbar { 
-  width: 4px; 
-}
-
-::-webkit-scrollbar-track { 
-  background: transparent; 
-}
-
-::-webkit-scrollbar-thumb { 
-  background: var(--border); 
-  border-radius: 2px; 
-}

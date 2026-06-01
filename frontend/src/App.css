@@ -1,67 +1,59 @@
 .page {
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   padding: 60px 20px 80px;
+  background-color: #00000089;
+  width: 100vw; 
+  height: 100vh;
 }
 
 .header {
   width: 100%;
   max-width: 560px;
-  margin-bottom: 40px;
-}
-
-.title {
-  font-family: 'Geist Mono', monospace;
-  font-size: 13px;
-  font-weight: 500;
-  color: #a78bfa;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  margin-bottom: 8px;
+  margin-bottom: 35px;
 }
 
 .heading {
-  font-size: 32px;
-  font-weight: 600;
-  line-height: 1;
+  font-family: 'Geist Mono', monospace;
+  font-size: 15px;
+  font-weight: 500;
+  color: #C4A482;
+  letter-spacing: 0.15em;
 }
 
-.stats {
-  margin-top: 10px;
-  font-family: 'Geist Mono', monospace;
-  font-size: 12px;
-  color: #71717a;
+.title {
+  font-size: 30px;
+  color: #000000dc;
 }
 
 .form {
   width: 100%;
   max-width: 560px;
   display: flex;
-  gap: 8px;
-  margin-bottom: 32px;
+  gap: 5px;
+  margin-bottom: 30px;
 }
 
 .input {
-  flex: 1;
+  flex: 1 1 0;
   background: #18181b;
   border: 1px solid #2a2a2f;
   border-radius: 10px;
-  padding: 12px 16px;
+  padding: 10px 20px;
   color: #f4f4f5;
-  font-size: 15px;
-  outline: none;
-  transition: border-color 0.15s;
+  font-size: 20px;
 }
 
 .addBtn {
-  background: #a78bfa;
-  color: #0e0e0f;
+  background: #C4A482;
+  color: black;
   border: none;
   border-radius: 10px;
-  padding: 12px 20px;
-  font-size: 15px;
+  padding: 2px 10px;
+  padding-bottom: 5px;
+  font-size: 23px;
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.15s, transform 0.1s;
@@ -69,7 +61,7 @@
 }
 
 .addBtn:hover {
-  opacity: 0.8;
+  background: wheat;
 }
 
 .filters {
@@ -81,14 +73,20 @@
 }
 
 .filterBtn {
-  background: transparent;
-  color: #71717a;
+  background: #C4A482;
+  border: 1px dashed #343434;
+  margin-right: 2%;
+  color: black;
   border-radius: 5px;
   padding: 5px 12px;
   font-size: 13px;
   cursor: pointer;
   font-family: 'Geist Mono', monospace;
   transition: all 0.15s;
+}
+
+.filterBtn:hover {
+  background-color: wheat;
 }
 
 .list {
@@ -102,24 +100,23 @@
 .todoItem {
   display: flex;
   align-items: center;
-  gap: 12px;
-  background: #18181b;
-  border: 1px solid #2a2a2f;
-  border-radius: 10px;
+  gap: 10px;
+  background: #000317e0;
+  border: 1px solid black;
+  border-radius: 20px;
   padding: 14px 16px;
   transition: all 0.2s;
 }
 
 .todoItem.done {
   opacity: 0.5;
-  border-color: transparent;
 }
 
 .checkbox {
   width: 20px;
   height: 20px;
   border-radius: 6px;
-  border: 1.5px solid #2a2a2f;
+  border: 1px dashed #393939;
   background: transparent;
   display: flex;
   align-items: center;
@@ -129,8 +126,9 @@
 }
 
 .checkbox.checked {
-  border-color: #a78bfa;
-  background: #a78bfa;
+  border: 1px solid #fac28b;
+  background: #fac28b;
+  color: black;
 }
 
 .todoText {
@@ -142,17 +140,6 @@
 .todoText.done {
   color: #52525b;
   text-decoration: line-through;
-}
-
-.editInput {
-  flex: 1;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid #a78bfa;
-  color: #f4f4f5;
-  font-size: 15px;
-  padding: 0 0 2px;
-  font-family: 'Geist', sans-serif;
 }
 
 .deleteBtn {
@@ -170,43 +157,11 @@
   color: #ff8f8f;
 }
 
-.idBadge {
-  font-family: 'Geist Mono', monospace;
-  color: #71717a;
-  font-size: 10px;
-  min-width: 25px;
-}
-
 .empty {
   text-align: center;
-  color: #71717a;
+  color: #777777;
   font-family: 'Geist Mono', monospace;
   font-size: 13px;
   padding: 50px 0;
   border-radius: 10px;
-  border: 1px dashed #2a2a2f;
-}
-
-.error {
-  width: 100%;
-  max-width: 560px;
-  background: #2a1515;
-  border: 1px solid #5a2020;
-  border-radius: 10px;
-  padding: 10px 15px;
-  color: #ff8f8f;
-  font-size: 13px;
-  margin-bottom: 15px;
-  font-family: 'Geist Mono', monospace;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.errorClose {
-  background: none;
-  border: none;
-  color: #71717a;
-  cursor: pointer;
-  font-size: 16px;
 }
