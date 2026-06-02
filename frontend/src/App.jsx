@@ -89,9 +89,10 @@ function ConfirmDeleteAll({ onConfirm, onCancel }) {
   return (
     <div className="confirmOverlay">
       <div className="confirmBox">
-        <p className="confirmText">are you sure?</p>
+        <p className="confirmText">sure you wanna delete all?</p>
+        <p className="waningText">This cannot be undone!</p>
         <div className="confirmButtons">
-          <button className="confirmOk" onClick={onConfirm}>ok</button>
+          <button className="confirmOk" onClick={onConfirm}>delete</button>
           <button className="confirmCancel" onClick={onCancel}>cancel</button>
         </div>
       </div>
