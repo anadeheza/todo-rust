@@ -106,7 +106,6 @@ export default function App() {
   const [showConfirmClear, setShowConfirmClear] = useState(false)
   const inputRef = useRef()
 
-  // Drag state
   const dragId = useRef(null)
   const dragOverId = useRef(null)
 
@@ -156,7 +155,6 @@ export default function App() {
     setShowConfirmClear(false)
   }
 
-  // ── Drag handlers ──────────────────────────────────────────
   function onDragStart(id) {
     dragId.current = id
   }
@@ -178,13 +176,11 @@ export default function App() {
   async function onDragEnd() {
     dragId.current = null
     dragOverId.current = null
-    // Persist new order to backend
     await apiFetch(`${API}/reorder`, {
       method: 'POST',
       body: JSON.stringify({ ids: todos.map(t => t.id) })
     })
   }
-  // ────────────────────────────────────────────────────────────
 
   const filtered = todos.filter(t => {
     if (filter === 'active') return !t.done
