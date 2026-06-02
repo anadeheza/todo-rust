@@ -7,7 +7,8 @@ use axum::{
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{CorsLayer, AllowOrigin};
+use http::HeaderValue;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct Todo {
@@ -177,7 +178,11 @@ async fn main() {
 
     let db: Db = Arc::new(Mutex::new(conn));
 
-    let cors = CorsLayer::permissive();
+    let cors = CorsLayer::new()
+        .allow_origin("https://todo-rust-snowy.vercel.app"
+            .parse::<HeaderValue>().unwrap())
+        .allow_methods(tower_http::cors::Any)
+        .allow_headers(tower_http::cors::Any);
 
     let app = Router::new()
         .route("/todos", get(list).post(create).delete(delete_all))
@@ -194,6 +199,6 @@ async fn main() {
     let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     println!("Server running on port {}", port);
-    
+
     axum::serve(listener, app).await.unwrap();
 }
