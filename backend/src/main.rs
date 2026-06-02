@@ -177,14 +177,23 @@ async fn main() {
 
     let db: Db = Arc::new(Mutex::new(conn));
 
+    let cors = CorsLayer::permissive();
+
     let app = Router::new()
         .route("/todos", get(list).post(create).delete(delete_all))
         .route("/todos/reorder", post(reorder))
         .route("/todos/:id", put(update).delete(delete_todo))
         .with_state(db)
-        .layer(CorsLayer::permissive());
+        .layer(cors);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3001").await.unwrap();
-    println!("Server running on http://localhost:3001");
+    let port = std::env::var("PORT")
+        .unwrap_or_else(|_| "3001".to_string())
+        .parse::<u16>()
+        .expect("PORT must be valid");
+
+    let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
+    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    println!("Server running on port {}", port);
+    
     axum::serve(listener, app).await.unwrap();
 }

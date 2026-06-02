@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import './App.css'
 import bg from './assets/bg.mp4'
 
-const API = '/todos'
+const API = `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/todos`;
 
 async function apiFetch(path, options = {}) {
   const res = await fetch(path, {
