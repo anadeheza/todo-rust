@@ -1,7 +1,9 @@
 # To do List 
 Just another basic to-do list but make it ocean styled
 
-This project was made with to learn how to use rust as a backend with a simple db
+This project was made with to learn how to use rust as a backend with a simple db and to practice my React + Vite coding skills for the frontend.
+
+I deployed it using render for the backend and vercel for the frontend.
 
 ## Features
 ### Tasks
