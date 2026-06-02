@@ -209,8 +209,7 @@ export default function App() {
 
       <div className="container">
         <div className="header">
-          <div className="heading">GET YOUR TASKS DONE!</div>
-          <h1 className="title">Add here ⤵︎</h1>
+          <h1 className="title">GET YOUR TASKS DONE! ⤵︎</h1>
         </div>
 
         <div className="tasks-container">
