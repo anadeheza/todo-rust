@@ -49,7 +49,7 @@ function TodoItem({ todo, onToggle, onDelete, onUpdate, dragHandleProps, isDragg
     <div className={`todoItem ${todo.done ? 'done' : ''} ${isDragging ? 'dragging' : ''}`}>
       {/* Drag handle */}
       <span className="dragHandle" {...dragHandleProps} title="Drag to reorder">
-        ⠿
+        ༄
       </span>
 
       <div
