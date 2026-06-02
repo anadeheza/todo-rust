@@ -9,18 +9,16 @@ async function apiFetch(path, options = {}) {
     headers: { 'Content-Type': 'application/json' },
     ...options
   })
-  if(!res.ok && res.status !== 204) throw new Error(`HTTP ${res.status}`)
-  if (res.status === 204) return null 
+  if (!res.ok && res.status !== 204) throw new Error(`HTTP ${res.status}`)
+  if (res.status === 204) return null
   return res.json()
 }
 
 function Checkmark() {
-  return (
-    <p>✓</p>
-  )
+  return <p>✓</p>
 }
 
-function TodoItem({ todo, onToggle, onDelete, onUpdate, isDragging, dragHandleProps }) {
+function TodoItem({ todo, onToggle, onDelete, onUpdate, dragHandleProps, isDragging }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(todo.title)
   const inputRef = useRef()
@@ -30,16 +28,16 @@ function TodoItem({ todo, onToggle, onDelete, onUpdate, isDragging, dragHandlePr
   }, [editing])
 
   function handleKeyDown(e) {
-    if(e.key === 'Enter') commitEdit()
-      if(e.key === 'Escape') {
-        setDraft(todo.title)
-        setEditing(false)
-      }
+    if (e.key === 'Enter') commitEdit()
+    if (e.key === 'Escape') {
+      setDraft(todo.title)
+      setEditing(false)
+    }
   }
 
   function commitEdit() {
     const trimmed = draft.trim()
-    if(trimmed && trimmed !== todo.title) {
+    if (trimmed && trimmed !== todo.title) {
       onUpdate(todo.id, { title: trimmed })
     } else {
       setDraft(todo.title)
@@ -48,18 +46,21 @@ function TodoItem({ todo, onToggle, onDelete, onUpdate, isDragging, dragHandlePr
   }
 
   return (
-    
-    <div className={`todoItem ${todo.done ? 'done' : ''} ${isDragging ? 'dragging' : ''} `}>
-      <span className="dragHandle" {...dragHandleProps}>
-        ༄
+    <div className={`todoItem ${todo.done ? 'done' : ''} ${isDragging ? 'dragging' : ''}`}>
+      {/* Drag handle */}
+      <span className="dragHandle" {...dragHandleProps} title="Drag to reorder">
+        ⠿
       </span>
 
-      <div className={`checkbox ${todo.done ? 'checked' : ''}`} onClick={() => onToggle(todo.id, todo.done)}>
+      <div
+        className={`checkbox ${todo.done ? 'checked' : ''}`}
+        onClick={() => onToggle(todo.id, todo.done)}
+      >
         {todo.done && <Checkmark />}
-      </div> 
+      </div>
 
       {editing ? (
-        <input 
+        <input
           ref={inputRef}
           className="editInput"
           value={draft}
@@ -71,6 +72,7 @@ function TodoItem({ todo, onToggle, onDelete, onUpdate, isDragging, dragHandlePr
         <span
           className={`todoText ${todo.done ? 'done' : ''}`}
           onDoubleClick={() => !todo.done && setEditing(true)}
+          title={todo.done ? '' : 'Double-click to edit'}
         >
           {todo.title}
         </span>
@@ -87,10 +89,9 @@ function ConfirmDeleteAll({ onConfirm, onCancel }) {
   return (
     <div className="confirmOverlay">
       <div className="confirmBox">
-        <p className="confirmText">Sure you wanna delete all?</p>
-        <p className="waningText">This cannot be undone</p>
+        <p className="confirmText">are you sure?</p>
         <div className="confirmButtons">
-          <button className="confirmOk" onClick={onConfirm}>delete</button>
+          <button className="confirmOk" onClick={onConfirm}>ok</button>
           <button className="confirmCancel" onClick={onCancel}>cancel</button>
         </div>
       </div>
@@ -102,9 +103,10 @@ export default function App() {
   const [todos, setTasks] = useState([])
   const [input, setInput] = useState('')
   const [filter, setFilter] = useState('all')
-  const [showConfirm, setShowConfirm] = useState(false)
+  const [showConfirmClear, setShowConfirmClear] = useState(false)
   const inputRef = useRef()
 
+  // Drag state
   const dragId = useRef(null)
   const dragOverId = useRef(null)
 
@@ -118,8 +120,7 @@ export default function App() {
   async function addTask(e) {
     e.preventDefault()
     const title = input.trim()
-    if(!title) return
-  
+    if (!title) return
     const todo = await apiFetch(API, {
       method: 'POST',
       body: JSON.stringify({ title })
@@ -134,7 +135,6 @@ export default function App() {
       body: JSON.stringify({ done: !currentDone }),
     })
     setTasks(prev => prev.map(t => t.id === id ? updated : t))
-
   }
 
   async function updateTask(id, changes) {
@@ -143,22 +143,22 @@ export default function App() {
       body: JSON.stringify(changes)
     })
     setTasks(prev => prev.map(t => t.id === id ? updated : t))
-
   }
 
   async function deleteTask(id) {
     await apiFetch(`${API}/${id}`, { method: 'DELETE' })
-    await loadTasks() 
+    setTasks(prev => prev.filter(t => t.id !== id))
   }
 
   async function deleteAll() {
     await apiFetch(API, { method: 'DELETE' })
     setTasks([])
-    setShowConfirm(false)  
+    setShowConfirmClear(false)
   }
 
+  // ── Drag handlers ──────────────────────────────────────────
   function onDragStart(id) {
-    dragId.current = id 
+    dragId.current = id
   }
 
   function onDragEnter(id) {
@@ -178,16 +178,18 @@ export default function App() {
   async function onDragEnd() {
     dragId.current = null
     dragOverId.current = null
+    // Persist new order to backend
     await apiFetch(`${API}/reorder`, {
       method: 'POST',
       body: JSON.stringify({ ids: todos.map(t => t.id) })
     })
   }
+  // ────────────────────────────────────────────────────────────
 
   const filtered = todos.filter(t => {
-    if(filter === 'active') return !t.done 
-    if(filter === 'done') return t.done
-    return true 
+    if (filter === 'active') return !t.done
+    if (filter === 'done') return t.done
+    return true
   })
 
   const doneCount = todos.filter(t => t.done).length
@@ -195,22 +197,23 @@ export default function App() {
   return (
     <div className="page">
       <video autoPlay muted loop id="myVideo">
-        <source src={bg} type="video/mp4"/>
+        <source src={bg} type="video/mp4" />
       </video>
 
-      {showConfirm && (
+      {showConfirmClear && (
         <ConfirmDeleteAll
           onConfirm={deleteAll}
-          onCancel={() => setShowConfirm(false)}
+          onCancel={() => setShowConfirmClear(false)}
         />
       )}
 
       <div className="container">
         <div className="header">
-          <h1 className="title">GET YOUR TASKS DONE! ⤵︎</h1>
+          <div className="heading">GET YOUR TASKS DONE!</div>
+          <h1 className="title">Add here ⤵︎</h1>
         </div>
 
-      <div className="tasks-container">
+        <div className="tasks-container">
           <form className="form" onSubmit={addTask}>
             <input
               ref={inputRef}
@@ -221,7 +224,7 @@ export default function App() {
             />
             <button className="addBtn" type="submit">⌯⌲</button>
           </form>
-    
+
           <div className="filters">
             {['all', 'active', 'done'].map(f => (
               <button
@@ -233,7 +236,7 @@ export default function App() {
               </button>
             ))}
           </div>
-    
+
           <div className="list">
             {filtered.length === 0 ? (
               <div className="empty">
@@ -252,12 +255,11 @@ export default function App() {
                   onDragOver={e => e.preventDefault()}
                 >
                   <TodoItem
-                    key={todo.id}
                     todo={todo}
                     onToggle={toggleTask}
                     onDelete={deleteTask}
                     onUpdate={updateTask}
-                    isDragging={false}
+                    isDragging={dragId.current === todo.id}
                     dragHandleProps={{}}
                   />
                 </div>
@@ -270,7 +272,7 @@ export default function App() {
               <span className="countText">{doneCount}/{todos.length} done</span>
               <button
                 className="deleteAllBtn"
-                onClick={() => setShowConfirm(true)}
+                onClick={() => setShowConfirmClear(true)}
               >
                 delete all
               </button>
