@@ -179,7 +179,7 @@ async fn main() {
     let db: Db = Arc::new(Mutex::new(conn));
 
     let cors = CorsLayer::new()
-        .allow_origin("https://your-app.vercel.app".parse::<HeaderValue>().unwrap())
+        .allow_origin("https://todo-rust-snowy.vercel.app/".parse::<HeaderValue>().unwrap())
         .allow_methods([http::Method::GET, http::Method::POST, http::Method::PUT, http::Method::DELETE])
         .allow_headers([http::header::CONTENT_TYPE]);
 
