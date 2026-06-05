@@ -7,7 +7,8 @@ use axum::{
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{CorsLayer, AllowOrigin};
+use http::HeaderValue;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct Todo {
@@ -177,7 +178,10 @@ async fn main() {
 
     let db: Db = Arc::new(Mutex::new(conn));
 
-    let cors = CorsLayer::permissive();
+    let cors = CorsLayer::new()
+        .allow_origin("https://your-app.vercel.app".parse::<HeaderValue>().unwrap())
+        .allow_methods([http::Method::GET, http::Method::POST, http::Method::PUT, http::Method::DELETE])
+        .allow_headers([http::header::CONTENT_TYPE]);
 
     let app = Router::new()
         .route("/todos", get(list).post(create).delete(delete_all))
