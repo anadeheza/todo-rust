@@ -1,1 +1,12 @@
-/target
+# Rust
+target/
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+
+# SQLite DB (don't commit the database file)
+*.db
+
+# OS
+.DS_Store

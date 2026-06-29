@@ -1,2 +1,0 @@
-fn(State<Arc<std::sync::Mutex<Vec<Todo>>>>, axum::extract::Path<u32>) -> axum::http::StatusCode {delete}
-fn(State<Arc<std::sync::Mutex<Vec<Todo>>>>, axum::extract::Path<u32>) -> axum::http::StatusCode {delete}: Handler<_, Arc<std::sync::Mutex<Vec<Todo>>>>
