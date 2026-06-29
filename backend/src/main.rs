@@ -179,7 +179,7 @@ async fn main() {
     let db: Db = Arc::new(Mutex::new(conn));
 
     let origin = std::env::var("ALLOWED_ORIGIN")
-        .unwrap_or_else(|_| "https://todo-rust-snowy.vercel.app".to_string());
+        .unwrap_or_else(|_| "https://todo-rust-snowy.vercel.app/".to_string());
 
     let cors = CorsLayer::new()
         .allow_origin(origin.parse::<HeaderValue>().unwrap())
