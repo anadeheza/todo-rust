@@ -10,3 +10,9 @@ frontend/dist/
 
 # OS
 .DS_Store
+
+# Environment variables
+.env
+.env.local
+.env.production
+.env.development
