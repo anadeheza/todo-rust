@@ -7,7 +7,7 @@ use axum::{
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{AllowOrigin, CorsLayer};
 use http::HeaderValue;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -178,20 +178,35 @@ async fn main() {
 
     let db: Db = Arc::new(Mutex::new(conn));
 
-    let origin = std::env::var("ALLOWED_ORIGIN")
+    // Read the allowed origin from environment variable, fallback to your Vercel app.
+    let allowed_origin = std::env::var("ALLOWED_ORIGIN")
         .unwrap_or_else(|_| "https://todo-rust-snowy.vercel.app".to_string());
 
+    // Build CORS layer with exact origin matching.
     let cors = CorsLayer::new()
-        .allow_origin("https://todo-rust-snowy.vercel.app".parse::<HeaderValue>().unwrap())
-        .allow_methods([http::Method::GET, http::Method::POST, http::Method::PUT, http::Method::DELETE])
-        .allow_headers([http::header::CONTENT_TYPE]);
+        .allow_origin(
+            allowed_origin
+                .parse::<HeaderValue>()
+                .expect("Invalid ALLOWED_ORIGIN header value"),
+        )
+        .allow_methods([
+            http::Method::GET,
+            http::Method::POST,
+            http::Method::PUT,
+            http::Method::DELETE,
+        ])
+        .allow_headers([
+            http::header::CONTENT_TYPE,
+            http::header::ACCEPT, // some browsers send this in preflight
+        ])
+        .allow_credentials(false); // explicit, default is false
 
     let app = Router::new()
         .route("/todos", get(list).post(create).delete(delete_all))
         .route("/todos/reorder", post(reorder))
         .route("/todos/:id", put(update).delete(delete_todo))
         .with_state(db)
-        .layer(cors);
+        .layer(cors); // Apply CORS layer last, wrapping the entire router
 
     let port = std::env::var("PORT")
         .unwrap_or_else(|_| "3001".to_string())
